@@ -10,8 +10,8 @@ type AdbClient struct {
 func NewAdbClient(ip string, port int) *AdbClient {
 	client := &AdbClient{IP: ip, Port: port}
 	if err := client.connect(); err != nil {
-		fmt.Println(err.Error())
-		return nil
+		fmt.Println(err)
+		return client
 	}
 	return client
 }
@@ -78,4 +78,16 @@ func (a *AdbClient) RunApp(appPath string) error {
 
 func (a *AdbClient) CloseApp(appPath string) error {
 	return a.closeApp(appPath)
+}
+
+func (a *AdbClient) GetAppPath(packname string) (string, error) {
+	return a.getAppPathByPack(packname)
+}
+
+func (a *AdbClient) GetElement() error {
+	return a.getElement()
+}
+
+func (a *AdbClient) Down(file string) error {
+	return a.downFile(file, "temp")
 }

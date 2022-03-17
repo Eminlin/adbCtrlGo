@@ -3,8 +3,6 @@ package adb
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -38,6 +36,31 @@ func cmdRun(cmd *exec.Cmd) (err error) {
 	return
 }
 
+//connect connect device
+func (a *AdbClient) connect() error {
+	cmd := exec.Command(getAdbCli(), "connect", a.getAddr())
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+	outStr := stdout.String()
+	if !strings.Contains(string(outStr), "connected") {
+		a.tcpip(a.Port)
+		fmt.Println("try again")
+		return fmt.Errorf("conn fail:%s", outStr)
+	}
+	return cmdRun(cmd)
+}
+
+//disconnect disconnect device
+func (a *AdbClient) disconnect() error {
+	cmd := exec.Command(getAdbCli(), "disconnect", a.getAddr())
+	return cmdRun(cmd)
+}
+
 func (a *AdbClient) getAddr() string {
 	return fmt.Sprintf("%s:%d", a.IP, a.Port)
 }
@@ -68,23 +91,6 @@ func (a *AdbClient) swipe(StartX, StartY, EndX, EndY int) error {
 		fmt.Sprintf("%d", EndX),
 		fmt.Sprintf("%d", EndY),
 	)
-	return cmdRun(cmd)
-}
-
-//connect connect device
-func (a *AdbClient) connect() error {
-	cmd := exec.Command(getAdbCli(), "connect", a.getAddr())
-	cmd.Stdout = os.Stdout
-	rtn, _ := ioutil.ReadAll(os.Stdout)
-	if strings.Contains(string(rtn), "connected") {
-		return fmt.Errorf("conn fail:%s", rtn)
-	}
-	return cmdRun(cmd)
-}
-
-//disconnect disconnect device
-func (a *AdbClient) disconnect() error {
-	cmd := exec.Command(getAdbCli(), "disconnect", a.getAddr())
 	return cmdRun(cmd)
 }
 
@@ -130,5 +136,33 @@ func (a *AdbClient) runApp(appPath string) error {
 //closeApp
 func (a *AdbClient) closeApp(packageName string) error {
 	cmd := exec.Command(getAdbCli(), "shell", "am", "force-stop", packageName)
+	return cmdRun(cmd)
+}
+
+func (a *AdbClient) tcpip(port int) error {
+	cmd := exec.Command(getAdbCli(), "tpcip", fmt.Sprintf("%d", port))
+	return cmdRun(cmd)
+}
+
+func (a *AdbClient) getAppPathByPack(packname string) (string, error) {
+	cmd := exec.Command(getAdbCli(), "-s", a.getAddr(), "shell", "pm", "path", packname)
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+	outStr := stdout.String()
+	return outStr, nil
+}
+
+//getElement
+func (a *AdbClient) getElement() error {
+	cmd := exec.Command(getAdbCli(), "-s", a.getAddr(), "shell", "uiautomator", "dump", "/sdcard/dump.xml")
+	return cmdRun(cmd)
+}
+
+func (a *AdbClient) downFile(file, temp string) error {
+	cmd := exec.Command(getAdbCli(), "-s", a.getAddr(), "pull", file, temp)
 	return cmdRun(cmd)
 }
