@@ -32,6 +32,7 @@ func cmdRun(cmd *exec.Cmd) (err error) {
 	outStr, errStr := stdout.String(), stderr.String()
 	if outStr != "" || errStr != "" {
 		fmt.Printf("recv [out: %s err: %s]\n", outStr, errStr)
+		return
 	}
 	return
 }
@@ -157,12 +158,24 @@ func (a *AdbClient) getAppPathByPack(packname string) (string, error) {
 }
 
 //getElement
-func (a *AdbClient) getElement() error {
-	cmd := exec.Command(getAdbCli(), "-s", a.getAddr(), "shell", "uiautomator", "dump", "/sdcard/dump.xml")
+func (a *AdbClient) getElement(filename string) error {
+	cmd := exec.Command(getAdbCli(), "-s", a.getAddr(), "shell", "uiautomator", "dump", "/sdcard/"+filename+".xml")
 	return cmdRun(cmd)
 }
 
-func (a *AdbClient) downFile(file, temp string) error {
-	cmd := exec.Command(getAdbCli(), "-s", a.getAddr(), "pull", file, temp)
+func (a *AdbClient) downFile(filename, tempPath string) error {
+	cmd := exec.Command(getAdbCli(), "-s", a.getAddr(), "pull", "/sdcard/"+filename+".xml", tempPath)
 	return cmdRun(cmd)
+}
+
+func (a *AdbClient) getPackInfo(name string) (string, error) {
+	cmd := exec.Command(getAdbCli(), "-s", a.getAddr(), "shell", "dumpsys", "package", name)
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+	outStr := stdout.String()
+	return outStr, nil
 }

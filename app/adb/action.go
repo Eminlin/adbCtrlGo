@@ -1,6 +1,8 @@
 package adb
 
-import "fmt"
+import (
+	"github.com/Eminlin/adbCtrlGo/app/log"
+)
 
 type AdbClient struct {
 	IP   string
@@ -10,7 +12,7 @@ type AdbClient struct {
 func NewAdbClient(ip string, port int) *AdbClient {
 	client := &AdbClient{IP: ip, Port: port}
 	if err := client.connect(); err != nil {
-		fmt.Println(err)
+		log.NewLog().Errorln(err)
 		return client
 	}
 	return client
@@ -84,10 +86,18 @@ func (a *AdbClient) GetAppPath(packname string) (string, error) {
 	return a.getAppPathByPack(packname)
 }
 
-func (a *AdbClient) GetElement() error {
-	return a.getElement()
+func (a *AdbClient) GetElement(filename string) error {
+	return a.getElement(filename)
 }
 
 func (a *AdbClient) Down(file string) error {
 	return a.downFile(file, "temp")
+}
+
+func (a *AdbClient) GetAppInfo(packname string) (string, error) {
+	return a.getPackInfo(packname)
+}
+
+func (a *AdbClient) LowLight() error {
+	return a.eventCode("220")
 }
