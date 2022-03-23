@@ -3,6 +3,9 @@ package adb
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -11,12 +14,54 @@ import (
 const AdbServerPort = 5037
 const AdbDaemonPort = 5555
 
+var adbExePath string = "adb/win/adb.exe"
+var adbWinApi string = "adb/win/AdbWinApi.dll"
+var adbWinUsbApi string = "adb/win/AdbWinUsbApi.dll"
+
 //getAdbCli return adb cli
 func getAdbCli() string {
 	if runtime.GOOS == "windows" {
-		return "adb/win/adb.exe"
+		_, err := os.Stat(adbExePath)
+		if err == nil {
+			return adbExePath
+		}
+		if os.IsNotExist(err) {
+			if err := downFile("https://github.com/Eminlin/adbCtrlGo/raw/main/adb/win/adb.exe", adbExePath); err != nil {
+				fmt.Println(err)
+				return ""
+			}
+			if err := downFile("https://github.com/Eminlin/adbCtrlGo/raw/main/adb/win/AdbWinApi.dll", adbWinApi); err != nil {
+				fmt.Println(err)
+				return ""
+			}
+			if err := downFile("https://github.com/Eminlin/adbCtrlGo/raw/main/adb/win/AdbWinUsbApi.dll", adbWinUsbApi); err != nil {
+				fmt.Println(err)
+				return ""
+			}
+			return adbExePath
+		}
+		return adbExePath
 	}
 	return "adb"
+}
+
+func downFile(url, path string) error {
+	fmt.Printf("download file:%s \n", url)
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	out, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 //cmdRun exec enter
