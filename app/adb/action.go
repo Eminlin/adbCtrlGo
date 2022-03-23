@@ -1,21 +1,16 @@
 package adb
 
-import (
-	"github.com/Eminlin/adbCtrlGo/app/log"
-)
-
 type AdbClient struct {
 	IP   string
 	Port int
 }
 
-func NewAdbClient(ip string, port int) *AdbClient {
+func NewAdbClient(ip string, port int) (*AdbClient, error) {
 	client := &AdbClient{IP: ip, Port: port}
 	if err := client.connect(); err != nil {
-		log.NewLog().Errorln(err)
-		return client
+		return client, err
 	}
-	return client
+	return client, nil
 }
 
 //ClickHome click home menu
